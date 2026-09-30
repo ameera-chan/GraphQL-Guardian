@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "graphql-guardian"
+version = "1.0.0"
+description = "Unified GraphQL security scanner for reconnaissance, abuse testing, and benchmark evaluation."
+readme = "README.md"
+requires-python = ">=3.10"
+dynamic = ["dependencies", "optional-dependencies"]
+
+[project.scripts]
+guardql = "src.cli.app:main"
+graphql-guardian = "src.cli.app:main"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["src", "src.*"]
+
+[tool.setuptools.package-data]
+"src.reporters" = ["templates/*.html"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements-runtime.txt"]}
+
+[tool.setuptools.dynamic.optional-dependencies]
+ml = {file = ["requirements-ml.txt"]}

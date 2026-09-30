@@ -1,0 +1,38 @@
+# Ready-to-use GraphQL Guardian scan configuration.
+# GraphQL Guardian accepts this file as:
+#   1. top-level keys
+#   2. nested under `scan:`
+#   3. nested under `guardian.scan:`
+
+guardian:
+  scan:
+    endpoint: "http://localhost:5000/graphql"
+    auth_config: "users.yaml"
+    schema: null
+
+    format: "json"
+    output: "reports/report.json"
+    profile: "default"
+    modules:
+      - config
+      - auth
+      - injection
+      - dos
+
+    level: 1
+    risk: 1
+    discover: false
+    verbose: false
+
+    ml: false
+    llm_validate: false
+    llm_provider: "mock"
+    llm_model: null
+
+    proxy: null
+    fail_on_severity: "none"
+    json_stdout: false
+
+    headers:
+      Authorization: "Bearer REPLACE_ME"
+      X-Requested-With: "GraphQL-Guardian"

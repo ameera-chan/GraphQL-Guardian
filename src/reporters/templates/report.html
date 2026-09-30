@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GraphQL Guardian Security Assessment Report</title>
+    <style>
+        :root {
+            --bg: #f3f5f8;
+            --paper: #ffffff;
+            --text: #1f2937;
+            --muted: #64748b;
+            --line: #d8dee8;
+            --header: #111827;
+            --critical: #7f1d1d;
+            --high: #b91c1c;
+            --medium: #b45309;
+            --low: #047857;
+            --info: #2563eb;
+            --possible: #6d28d9;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 28px;
+            background: var(--bg);
+            color: var(--text);
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .page {
+            max-width: 1180px;
+            margin: 0 auto;
+            background: var(--paper);
+            border: 1px solid var(--line);
+        }
+
+        header {
+            padding: 28px 32px;
+            border-bottom: 1px solid var(--line);
+            background: #fbfcfe;
+        }
+
+        h1, h2, h3, p { margin-top: 0; }
+        h1 { margin-bottom: 6px; font-size: 28px; color: var(--header); }
+        h2 { margin: 30px 0 14px; font-size: 20px; color: var(--header); }
+        h3 { margin: 0; font-size: 16px; color: var(--header); }
+
+        .subtitle { margin: 0; color: var(--muted); }
+        .content { padding: 26px 32px 34px; }
+
+        .meta-grid, .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .meta-item, .metric {
+            border: 1px solid var(--line);
+            padding: 12px;
+            background: #fff;
+        }
+
+        .label {
+            display: block;
+            color: var(--muted);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .05em;
+            text-transform: uppercase;
+        }
+
+        .value {
+            display: block;
+            margin-top: 4px;
+            font-weight: 700;
+            word-break: break-word;
+        }
+
+        .metric .value { font-size: 24px; }
+        .critical { color: var(--critical); }
+        .high { color: var(--high); }
+        .medium { color: var(--medium); }
+        .low { color: var(--low); }
+        .info { color: var(--info); }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid var(--line);
+            margin-bottom: 20px;
+        }
+
+        th, td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--line);
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background: #f8fafc;
+            color: #334155;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+
+        tr:last-child td { border-bottom: 0; }
+
+        .badge {
+            display: inline-block;
+            min-width: 86px;
+            padding: 3px 8px;
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        .bg-critical { background: var(--critical); }
+        .bg-high { background: var(--high); }
+        .bg-medium { background: var(--medium); }
+        .bg-low { background: var(--low); }
+        .bg-info { background: var(--info); }
+        .bg-confirmed { background: var(--high); }
+        .bg-possible { background: var(--possible); }
+        .bg-informational { background: var(--info); }
+
+        .finding {
+            border: 1px solid var(--line);
+            margin-bottom: 18px;
+            break-inside: avoid;
+        }
+
+        .finding-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 18px;
+            padding: 14px 16px;
+            background: #f8fafc;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .badges {
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+
+        .finding-body { padding: 16px; }
+        .finding-section { margin-top: 14px; }
+        .finding-section:first-child { margin-top: 0; }
+        .finding-section h4 {
+            margin: 0 0 6px;
+            color: #334155;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+
+        .code {
+            max-height: 360px;
+            overflow: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+            padding: 12px;
+            border: 1px solid #1f2937;
+            background: #111827;
+            color: #e5e7eb;
+            font-family: Consolas, Monaco, monospace;
+            font-size: 12px;
+        }
+
+        .remediation {
+            padding: 12px;
+            border-left: 4px solid var(--low);
+            background: #ecfdf5;
+            white-space: pre-wrap;
+        }
+
+        .empty {
+            padding: 18px;
+            border: 1px solid var(--line);
+            color: var(--muted);
+            background: #f8fafc;
+        }
+
+        footer {
+            padding: 18px 32px;
+            border-top: 1px solid var(--line);
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        @media (max-width: 820px) {
+            body { padding: 12px; }
+            header, .content, footer { padding-left: 16px; padding-right: 16px; }
+            .meta-grid, .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .finding-head { display: block; }
+            .badges { margin-top: 10px; }
+        }
+
+        @media print {
+            body { padding: 0; background: #fff; }
+            .page { max-width: none; border: 0; }
+            .code { max-height: none; }
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+    <header>
+        <h1>GraphQL Guardian Security Assessment Report</h1>
+        <p class="subtitle">Automated GraphQL API security assessment</p>
+    </header>
+
+    <main class="content">
+        <section>
+            <div class="meta-grid">
+                <div class="meta-item">
+                    <span class="label">Generated</span>
+                    <span class="value">{{ scan_date }}</span>
+                </div>
+                <div class="meta-item">
+                    <span class="label">Target</span>
+                    <span class="value">{{ metadata.endpoint|default("GraphQL endpoint", true) }}</span>
+                </div>
+                <div class="meta-item">
+                    <span class="label">Profile</span>
+                    <span class="value">{{ metadata.profile|default("unknown", true) }}</span>
+                </div>
+                <div class="meta-item">
+                    <span class="label">Engine</span>
+                    <span class="value">
+                        {% if fingerprint.engine_name %}
+                            {{ fingerprint.engine_name }}
+                            {% if fingerprint.technologies %}
+                                ({{ fingerprint.technologies|join(", ") }})
+                            {% endif %}
+                        {% else %}
+                            Unknown
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2>Executive Summary</h2>
+            <div class="summary-grid">
+                <div class="metric"><span class="label">Total Findings</span><span class="value">{{ summary.total }}</span></div>
+                <div class="metric"><span class="label">Critical</span><span class="value critical">{{ summary.critical }}</span></div>
+                <div class="metric"><span class="label">High</span><span class="value high">{{ summary.high }}</span></div>
+                <div class="metric"><span class="label">Medium</span><span class="value medium">{{ summary.medium }}</span></div>
+                <div class="metric"><span class="label">Low</span><span class="value low">{{ summary.low }}</span></div>
+                <div class="metric"><span class="label">Informational</span><span class="value info">{{ summary.info }}</span></div>
+                <div class="metric"><span class="label">Confirmed</span><span class="value high">{{ summary.confirmed }}</span></div>
+                <div class="metric"><span class="label">Possible</span><span class="value medium">{{ summary.possible }}</span></div>
+            </div>
+        </section>
+
+        <section>
+            <h2>Evidence Summary</h2>
+            <div class="summary-grid">
+                <div class="metric"><span class="label">Replayable</span><span class="value low">{{ evidence_summary.replayable_findings|default(0, true) }}</span></div>
+                <div class="metric"><span class="label">Request + Response</span><span class="value high">{{ evidence_summary.request_response_findings|default(0, true) }}</span></div>
+                <div class="metric"><span class="label">AI Reviewed</span><span class="value medium">{{ evidence_summary.ai_reviewed_findings|default(0, true) }}</span></div>
+                <div class="metric"><span class="label">Evidence Levels</span><span class="value">{{ evidence_summary.levels|default({}, true)|short_json }}</span></div>
+            </div>
+        </section>
+
+        {% if llm_validation and llm_validation.enabled %}
+        <section>
+            <h2>AI Validation</h2>
+            <div class="summary-grid">
+                <div class="metric"><span class="label">Status</span><span class="value">{{ llm_validation.status|default("unknown", true) }}</span></div>
+                <div class="metric"><span class="label">Provider</span><span class="value">{{ llm_validation.provider|default("unknown", true) }}</span></div>
+                <div class="metric"><span class="label">Model</span><span class="value">{{ llm_validation.model|default("unknown", true) }}</span></div>
+                <div class="metric"><span class="label">API Success</span><span class="value low">{{ llm_validation.api_successes|default(0, true) }}/{{ llm_validation.findings_reviewed|default(0, true) }}</span></div>
+                <div class="metric"><span class="label">Filtered FP</span><span class="value medium">{{ llm_validation.filtered_false_positives|default(0, true) }}</span></div>
+            </div>
+        </section>
+        {% endif %}
+
+        {% if remediation_summary %}
+        <section>
+            <h2>Remediation Summary</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Priority</th>
+                        <th>Fix</th>
+                        <th>Applies To</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in remediation_summary %}
+                    <tr>
+                        <td><span class="badge bg-{{ item.highest_severity|lower }}">{{ item.highest_severity }}</span></td>
+                        <td>{{ item.remediation }}</td>
+                        <td>
+                            {{ item.count }} finding{% if item.count != 1 %}s{% endif %}
+                            {% if item.categories %}({{ item.categories|join(", ") }}){% endif %}
+                            <div class="code">{{ item.findings|short_json }}</div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+        {% endif %}
+
+        <section>
+            <h2>Finding Index</h2>
+            {% if findings %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>No.</th>
+                        <th>Finding</th>
+                        <th>Severity</th>
+                        <th>Status</th>
+                        <th>Evidence</th>
+                        <th>Category</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for view in finding_views %}
+                    {% set finding = view.finding %}
+                    {% set item = view.item %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ finding.title }}</td>
+                        <td><span class="badge bg-{{ finding.severity|lower }}">{{ finding.severity }}</span></td>
+                        <td><span class="badge bg-{{ item.verification_status }}">{{ item.verification_status }}</span></td>
+                        <td>{{ view.evidence_level }}</td>
+                        <td>{{ finding.category }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty">No findings were reported.</div>
+            {% endif %}
+        </section>
+
+        <section>
+            <h2>Detailed Findings</h2>
+            {% for view in finding_views %}
+            {% set finding = view.finding %}
+            {% set item = view.item %}
+            {% set evidence = view.evidence %}
+            <article class="finding">
+                <div class="finding-head">
+                    <h3>{{ loop.index }}. {{ finding.title }}</h3>
+                    <div class="badges">
+                        <span class="badge bg-{{ finding.severity|lower }}">{{ finding.severity }}</span>
+                        <span class="badge bg-{{ item.verification_status }}">{{ item.verification_status }}</span>
+                    </div>
+                </div>
+                <div class="finding-body">
+                    <div class="finding-section">
+                        <h4>Description</h4>
+                        <p>{{ finding.description }}</p>
+                    </div>
+
+                    <div class="finding-section">
+                        <h4>Technical Context</h4>
+                        <table>
+                            <tbody>
+                                <tr><th>Category</th><td>{{ finding.category }}</td></tr>
+                                {% if finding.rule_id %}<tr><th>Rule ID</th><td>{{ finding.rule_id }}</td></tr>{% endif %}
+                                {% if finding.endpoint %}<tr><th>Endpoint</th><td>{{ finding.endpoint }}</td></tr>{% endif %}
+                                {% if finding.operation_name %}<tr><th>Operation</th><td>{{ finding.operation_name }}</td></tr>{% endif %}
+                                {% if finding.field %}<tr><th>Field</th><td>{{ finding.field }}</td></tr>{% endif %}
+                                {% if finding.confidence %}<tr><th>Confidence</th><td>{{ finding.confidence }}</td></tr>{% endif %}
+                                <tr><th>Evidence Level</th><td>{{ view.evidence_level }}</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {% if finding.reproduction %}
+                    <div class="finding-section">
+                        <h4>Reproduction</h4>
+                        <div class="code">{{ finding.reproduction }}</div>
+                    </div>
+                    {% endif %}
+
+                    {% if finding.ai_validation %}
+                    <div class="finding-section">
+                        <h4>AI Review</h4>
+                        <table>
+                            <tbody>
+                                <tr><th>Decision</th><td>{{ finding.ai_validation.decision|default("needs_manual_review", true) }}</td></tr>
+                                <tr><th>Confidence</th><td>{{ finding.ai_validation.confidence|default(0, true) }}</td></tr>
+                                <tr><th>Reason</th><td>{{ finding.ai_validation.reason|default(finding.ai_validation.reasoning|default("", true), true) }}</td></tr>
+                                <tr><th>Manual Check</th><td>{{ finding.ai_validation.manual_check|default("", true) }}</td></tr>
+                                {% if finding.ai_validation.evidence_used %}<tr><th>Evidence Used</th><td><div class="code">{{ finding.ai_validation.evidence_used|short_json }}</div></td></tr>{% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endif %}
+
+                    {% if evidence.details or evidence.request or evidence.response or evidence.artifacts %}
+                    <div class="finding-section">
+                        <h4>Evidence</h4>
+                        {% if evidence.details %}
+                        <h4>Proof Details</h4>
+                        <div class="code">{{ evidence.details|short_json }}</div>
+                        {% endif %}
+
+                        {% if evidence.request %}
+                        <h4>Request</h4>
+                        <table>
+                            <tbody>
+                                {% if evidence.request.method %}<tr><th>Method</th><td>{{ evidence.request.method }}</td></tr>{% endif %}
+                                {% if evidence.request.url %}<tr><th>URL</th><td>{{ evidence.request.url }}</td></tr>{% endif %}
+                                {% if evidence.request.headers %}<tr><th>Headers</th><td><div class="code">{{ evidence.request.headers|short_json }}</div></td></tr>{% endif %}
+                                {% if evidence.request.body %}<tr><th>Body</th><td><div class="code">{{ evidence.request.body|short_json }}</div></td></tr>{% endif %}
+                            </tbody>
+                        </table>
+                        {% endif %}
+
+                        {% if evidence.response %}
+                        <h4>Response</h4>
+                        <table>
+                            <tbody>
+                                {% if evidence.response.status_code is defined %}<tr><th>Status</th><td>{{ evidence.response.status_code }}</td></tr>{% endif %}
+                                {% if evidence.response.response_time_ms %}<tr><th>Time</th><td>{{ evidence.response.response_time_ms }} ms</td></tr>{% endif %}
+                                {% if evidence.response.headers %}<tr><th>Headers</th><td><div class="code">{{ evidence.response.headers|short_json }}</div></td></tr>{% endif %}
+                                {% if evidence.response.body_sample %}<tr><th>Body Sample</th><td><div class="code">{{ evidence.response.body_sample }}</div></td></tr>{% endif %}
+                            </tbody>
+                        </table>
+                        {% endif %}
+
+                        {% if evidence.artifacts %}
+                        <h4>Artifacts</h4>
+                        <div class="code">{{ evidence.artifacts|short_json }}</div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    {% if finding.remediation %}
+                    <div class="finding-section">
+                        <h4>Remediation</h4>
+                        <div class="remediation">{{ finding.remediation }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </article>
+            {% endfor %}
+        </section>
+    </main>
+
+    <footer>
+        Generated by GraphQL Guardian on {{ scan_date }}.
+    </footer>
+</div>
+</body>
+</html>

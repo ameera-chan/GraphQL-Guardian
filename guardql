@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
+if command -v python3 >/dev/null 2>&1; then
+  PYTHON_BIN="python3"
+elif command -v python >/dev/null 2>&1; then
+  PYTHON_BIN="python"
+else
+  echo "guardql: python3 or python is required" >&2
+  exit 127
+fi
+
+exec "$PYTHON_BIN" - "$@" <<'PY'
+import runpy
+import sys
+
+sys.argv[0] = "guardql"
+
+try:
+    runpy.run_module("src.main", run_name="__main__")
+except ModuleNotFoundError as exc:
+    if exc.name and not exc.name.startswith("src"):
+        sys.stderr.write(
+            f"guardql: missing Python dependency '{exc.name}'. "
+            "Install the Debian package dependencies, then reinstall guardql.\n"
+        )
+        raise SystemExit(1)
+    raise
+PY

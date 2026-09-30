@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+venv/
+.venv/
+
+# Frontend dependencies and build output
+frontend/node_modules/
+frontend/dist/
+
+# Runtime and generated scan artifacts
+data/*.db
+reports/
+*.log
+.env
+.env.*
+!.env.example
+
+# Editor folders
+.idea/
+.vscode/
